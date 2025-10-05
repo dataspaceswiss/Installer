@@ -1,0 +1,19 @@
+{
+	email ${admin_email}
+	log {
+		output stdout
+		level INFO
+	}
+}
+
+app.${domain_name} {
+	import ./blocked_ips.caddyfile
+	reverse_proxy frontend:80
+	log
+}
+
+api.${domain_name} {
+	import ./blocked_ips.caddyfile
+	reverse_proxy api:5010
+	log
+}

@@ -1,0 +1,4 @@
+@blocked {
+    # remote_ip xxx.xx.xx.xx
+}
+abort @blocked

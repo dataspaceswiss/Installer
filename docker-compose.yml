@@ -1,0 +1,171 @@
+networks:
+  internal_net:
+    driver: bridge
+    internal: true
+  external_net:
+    driver: bridge
+
+
+volumes:
+  data:
+    name: DataSpace_data
+    driver: local
+    driver_opts:
+      type: none
+      device: ./volume/DataSpace_data
+      o: bind
+  db_data:
+    name: DataSpace_db_data
+    driver: local
+    driver_opts:
+      type: none
+      device: ./volume/DataSpace_db_data
+      o: bind
+  db_backup:
+    name: DataSpace_db_backup
+    driver: local
+    driver_opts:
+      type: none
+      device: ./volume/DataSpace_db_backup
+      o: bind
+  ollama_data:
+    name: DataSpace_ollama_data
+  caddy_data:
+    name: DataSpace_caddy_data
+
+services:
+
+  database:
+    image: postgres:15
+    container_name: DataSpace_database
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=DataLineDb
+    expose:
+      - '5432'
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - internal_net
+
+  pgbackups:
+    image: prodrigestivill/postgres-backup-local
+    container_name: DataSpace_pgbackups
+    restart: always
+    volumes:
+      - db_backup:/backups
+    depends_on:
+      - database
+    environment:
+      - POSTGRES_HOST=${DB_SERVER}
+      - POSTGRES_DB=DataLineDb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=7
+      - BACKUP_KEEP_WEEKS=4
+      - BACKUP_KEEP_MONTHS=6
+      - HEALTHCHECK_PORT=8080
+    networks:
+      - internal_net
+
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy
+    container_name: DataSpace_docker_socket_proxy
+    restart: always
+    environment:
+      - POST=1
+      - CONTAINERS=1
+      - IMAGES=1
+      - BUILD=1
+      - ALLOW_START=1
+      - ALLOW_STOP=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - internal_net
+
+  api:
+    image: ghcr.io/dataspaceswiss/api:${API_VERSION:-latest}
+    container_name: DataSpace_api
+    depends_on:
+      - database
+    environment:
+      - AppSettings__INSTANCE_NAME=${INSTANCE_NAME}
+      - AppSettings__INSTANCE_COLOR=${INSTANCE_COLOR}
+      - AppSettings__CORS_ORIGINS=${CORS_ORIGINS}
+      - AppSettings__API_URL=${API_URL}
+      - AppSettings__SMTP_SERVER=${SMTP_SERVER}
+      - AppSettings__SMTP_SERVER_PASSWORD=${SMTP_SERVER_PASSWORD}
+      - AppSettings__OLLAMA_ENDPOINT=${OLLAMA_ENDPOINT}
+      - AppSettings__GEMINI_ENDPOINT=${GEMINI_ENDPOINT}
+      - AppSettings__GEMINI_API_KEY=${GEMINI_API_KEY}
+      - AppSettings__DOCKER_HOST=http://docker-socket-proxy:2375
+      - AppSettings__DATA_STORAGE_PATH=${DATA_STORAGE_PATH}
+      - AppSettings__HOST_DATA_STORAGE_PATH=${HOST_DATA_STORAGE_PATH}
+      - AppSettings__ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - AppSettings__PLATFORM_ADMIN_EMAIL=${PLATFORM_ADMIN_EMAIL}
+      - AppSettings__PLATFORM_ADMIN_PASSWORD=${PLATFORM_ADMIN_PASSWORD}
+      - AppSettings__DB_SERVER=${DB_SERVER}
+      - AppSettings__DB_PASSWORD=${DB_PASSWORD}
+      - AppSettings__MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
+      - AppSettings__MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET}
+      - AppSettings__GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - AppSettings__GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - AppSettings__LICENSE_KEY=${LICENSE_KEY}
+      - AppSettings__USER_ID=${USER_ID}
+      - AppSettings__GROUP_ID=${GROUP_ID}
+      - ASPNETCORE_URLS=http://+:5010
+      - HEALTHCHECK_PORT=5010
+    expose:
+      - '5010'
+    restart: always
+    volumes:
+      - data:/app/data
+    networks:
+      - external_net
+      - internal_net
+    user: "${USER_ID}:${GROUP_ID}"
+
+  ollama:
+    image: ghcr.io/dataspaceswiss/ollama:${OLLAMA_VERSION:-latest}
+    container_name: DataSpace_ollama
+    expose:
+      - '11434'
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - internal_net
+
+  frontend:
+    image: ghcr.io/dataspaceswiss/frontend:${FRONTEND_VERSION:-latest}
+    container_name: DataSpace_frontend
+    depends_on:
+      - api
+    environment:
+      - API_URL=${API_URL}
+      - DOCS_URL=${DOCS_URL}
+      - INSTANCE_NAME=${INSTANCE_NAME}
+      - INSTANCE_COLOR=${INSTANCE_COLOR}
+    expose:
+      - '80'
+    restart: always
+    networks:
+      - external_net
+
+  caddy:
+    image: caddy:latest
+    container_name: DataSpace_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/blocked_ips.caddyfile:/etc/caddy/blocked_ips.caddyfile
+      - caddy_data:/data
+    networks:
+      - external_net
