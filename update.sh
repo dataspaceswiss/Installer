@@ -25,7 +25,7 @@ docker compose pull
 # Backup volume
 echo "[2/6] Backing up volume..."
 rm -rf volume_backup/*
-cp -r volume/* volume_backup/
+cp -r volume/. volume_backup/
 
 # Start all docker services
 echo "[3/6] Starting Docker services..."

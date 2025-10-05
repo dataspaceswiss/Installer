@@ -97,12 +97,12 @@ mkdir -p ./secrets/
 
 # Download resource files
 echo "Downloading configuration files..."
-wget -q https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/startup.sh
-wget -q https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/update.sh
-wget -q https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/docker-compose.yml
-wget -q https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/.env
-wget -q https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/Caddyfile -O ./caddy/Caddyfile
-wget -q https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/blocked_ips.caddyfile -O ./caddy/blocked_ips.caddyfile
+wget -q -O startup.sh https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/startup.sh
+wget -q -O update.sh https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/update.sh
+wget -q -O docker-compose.yml https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/docker-compose.yml
+wget -q -O .env https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/.env
+wget -q -O Caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/Caddyfile -O ./caddy/Caddyfile
+wget -q -O blocked_ips.caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/blocked_ips.caddyfile -O ./caddy/blocked_ips.caddyfile
 
 # Make scripts executable
 chmod +x ./startup.sh
