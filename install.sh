@@ -54,18 +54,24 @@ usermod -aG sudo dataspace_app
 # Set password for dataspace_app
 echo "dataspace_app:$password" | chpasswd
 
-# Install Docker
-echo "Installing Docker..."
-curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
-sh /tmp/get-docker.sh
-rm /tmp/get-docker.sh
-
-# Start and enable Docker service
-systemctl start docker
-systemctl enable docker
+# Check if Docker is already installed
+if command -v docker &> /dev/null; then
+    echo "Docker is already installed. Skipping installation."    
+else
+    echo "Installing Docker..."
+    curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+    sh /tmp/get-docker.sh
+    rm /tmp/get-docker.sh
+fi
 
 # Test if docker is running
-docker ps
+if docker ps &> /dev/null; then
+    echo "Docker is running."
+else
+    echo "Starting Docker service..."
+    systemctl start docker
+    systemctl enable docker
+fi
 
 # Add dataspace_app to docker group
 usermod -aG docker dataspace_app
