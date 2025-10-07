@@ -7,7 +7,12 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo "=== DataSpace Installation Script ==="
+echo "  ____        _        ____                         ___           _        _ _           ";
+echo " |  _ \\  __ _| |_ __ _/ ___| _ __   __ _  ___ ___  |_ _|_ __  ___| |_ __ _| | | ___ _ __ ";
+echo " | | | |/ _\` | __/ _\` \\___ \\| '_ \\ / _\` |/ __/ _ \\  | || '_ \\/ __| __/ _\` | | |/ _ \\ '__|";
+echo " | |_| | (_| | || (_| |___) | |_) | (_| | (_|  __/  | || | | \\__ \\ || (_| | | |  __/ |   ";
+echo " |____/ \\__,_|\\__\\__,_|____/| .__/ \\__,_|\\___\\___| |___|_| |_|___/\\__\\__,_|_|_|\\___|_|   ";
+echo "                            |_|                                                          ";
 echo
 
 # Prompt for domain name
@@ -91,6 +96,9 @@ cd ./DataSpace
 
 # Create folders first
 mkdir -p ./volume/
+mkdir -p ./volume/DataSpace_data
+mkdir -p ./volume/DataSpace_db_data
+mkdir -p ./volume/DataSpace_db_backup
 mkdir -p ./volume_backup/
 mkdir -p ./caddy/
 mkdir -p ./secrets/
