@@ -153,6 +153,3 @@ echo
 echo "Note: You may need to log out and back in for Docker permissions to take effect."
 echo "Or run: newgrp docker"
 echo
-
-# wait for 1 minute
-sleep 300
