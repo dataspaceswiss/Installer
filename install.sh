@@ -44,14 +44,26 @@ if [ -z "$password" ]; then
     exit 1
 fi
 
+# Prompt for UID/GID with 1002 as default
+read -p "Enter UID/GID for dataspace_app user (default: 1002): " uid_gid
+if [ -z "$uid_gid" ]; then
+    uid_gid=1002
+fi
+
+# Validate that uid_gid is a number
+if ! [[ "$uid_gid" =~ ^[0-9]+$ ]]; then
+    echo "Error: UID/GID must be a number"
+    exit 1
+fi
+
 echo
-echo "Creating user and installing Docker..."
+echo "Creating user..."
 
-# Create the dataspace_app group with GID 1002 (ignore if exists)
-groupadd -g 1002 dataspace_app 2>/dev/null || true
+# Create the dataspace_app group with specified GID (ignore if exists)
+groupadd -g $uid_gid dataspace_app 2>/dev/null || true
 
-# Create a new user called dataspace_app with UID and GID 1002
-useradd -m -s /bin/bash -u 1002 -g 1002 dataspace_app 2>/dev/null || true
+# Create a new user called dataspace_app with specified UID and GID
+useradd -m -s /bin/bash -u $uid_gid -g $uid_gid dataspace_app 2>/dev/null || true
 
 # Add to sudo group
 usermod -aG sudo dataspace_app
@@ -109,8 +121,9 @@ wget -q -O startup.sh https://raw.githubusercontent.com/dataspaceswiss/Installer
 wget -q -O update.sh https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/update.sh
 wget -q -O docker-compose.yml https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/docker-compose.yml
 wget -q -O .env https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/.env
-wget -q -O Caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/Caddyfile -O ./caddy/Caddyfile
-wget -q -O blocked_ips.caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/blocked_ips.caddyfile -O ./caddy/blocked_ips.caddyfile
+wget -q -O Caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/Caddyfile
+wget -q -O blocked_ips.caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/blocked_ips.caddyfile
+wget -q -O dataspace-startup.service https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/dataspace-startup.service
 
 # Make scripts executable
 chmod +x ./startup.sh
@@ -127,6 +140,10 @@ sed -i "s/{admin_email}/admin@$domain_name/g" ./.env 2>/dev/null || true
 
 sed -i "s/{license_key}/$license_key/g" ./.env 2>/dev/null || true
 
+# Update .env file content with USER_ID and GROUP_ID
+sed -i "s/{user_id}/$uid_gid/g" ./.env 2>/dev/null || true
+sed -i "s/{group_id}/$uid_gid/g" ./.env 2>/dev/null || true
+
 # Save the Github key to a file
 echo "$github_key" > ./secrets/gh_key.txt
 chmod 600 ./secrets/gh_key.txt
@@ -135,11 +152,11 @@ echo "Files downloaded and configured successfully."
 
 EOSU
 
-# Register startup script to execute on boot (as dataspace_app user)
-STARTUP_SCRIPT_PATH="/home/dataspace_app/DataSpace/startup.sh"
-sudo -u dataspace_app bash <<EOCRON
-(crontab -l 2>/dev/null | grep -v "$STARTUP_SCRIPT_PATH" ; echo "@reboot $STARTUP_SCRIPT_PATH") | crontab -
-EOCRON
+# Setup systemd service for startup script
+echo "Setting up systemd service..."
+sudo cp /home/dataspace_app/DataSpace/dataspace-startup.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable dataspace-startup.service
 
 echo
 echo "=== Installation Complete ==="
