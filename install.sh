@@ -36,23 +36,22 @@ if [ -z "$license_key" ]; then
     exit 1
 fi
 
-# Prompt for dataspace_app password
-read -sp "Enter a new password for dataspace_app user: " password
-echo
-if [ -z "$password" ]; then
-    echo "Error: Password cannot be empty"
-    exit 1
-fi
-
-# Prompt for UID/GID with 1002 as default
-read -p "Enter UID/GID for dataspace_app user (default: 1002): " uid_gid
+# Prompt for UID/GID with 1007 as default
+read -p "Enter UID/GID for dataspace_app user (default: 1007): " uid_gid
 if [ -z "$uid_gid" ]; then
-    uid_gid=1002
+    uid_gid=1007
 fi
 
 # Validate that uid_gid is a number
 if ! [[ "$uid_gid" =~ ^[0-9]+$ ]]; then
     echo "Error: UID/GID must be a number"
+    exit 1
+fi
+
+# Prompt for public SSH key
+read -p "Enter your SSH public key for dataspace_app user: " ssh_key
+if [ -z "$ssh_key" ]; then
+    echo "Error: SSH key cannot be empty"
     exit 1
 fi
 
@@ -65,11 +64,14 @@ groupadd -g $uid_gid dataspace_app 2>/dev/null || true
 # Create a new user called dataspace_app with specified UID and GID
 useradd -m -s /bin/bash -u $uid_gid -g $uid_gid dataspace_app 2>/dev/null || true
 
-# Add to sudo group
-usermod -aG sudo dataspace_app
+# Add the key
+mkdir -p /home/dataspace_app/.ssh
+echo "$ssh_key" > /home/dataspace_app/.ssh/authorized_keys
+chown -R dataspace_app:dataspace_app /home/dataspace_app/.ssh
+chmod 700 /home/dataspace_app/.ssh
+chmod 600 /home/dataspace_app/.ssh/authorized_keys
 
-# Set password for dataspace_app
-echo "dataspace_app:$password" | chpasswd
+
 
 # Check if Docker is already installed
 if command -v docker &> /dev/null; then
