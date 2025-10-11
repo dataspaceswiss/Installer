@@ -4,10 +4,10 @@ After=network.target
 
 [Service]
 Type=oneshot
-User=dataspace_app
-WorkingDirectory=/home/dataspace_app/DataSpace
-ExecStart=/home/dataspace_app/DataSpace/startup.sh
-ExecStop=/usr/bin/docker compose -f /home/dataspace_app/DataSpace/docker-compose.yml down
+User=dataspace
+WorkingDirectory=/opt/dataspace/Platform
+ExecStart=/opt/dataspace/Platform/startup.sh
+ExecStop=/usr/bin/docker compose -f /opt/dataspace/Platform/docker-compose.yml down
 
 [Install]
 WantedBy=multi-user.target

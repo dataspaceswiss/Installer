@@ -37,7 +37,7 @@ if [ -z "$license_key" ]; then
 fi
 
 # Prompt for UID/GID with 1007 as default
-read -p "Enter UID/GID for dataspace_app user (default: 1007): " uid_gid
+read -p "Enter UID/GID for dataspace user (default: 1007): " uid_gid
 if [ -z "$uid_gid" ]; then
     uid_gid=1007
 fi
@@ -51,11 +51,11 @@ fi
 echo
 echo "Creating user..."
 
-# Create the dataspace_app group with specified GID (ignore if exists)
-groupadd -g $uid_gid dataspace_app 2>/dev/null || true
+# Create the dataspace group with specified GID (ignore if exists)
+groupadd -g $uid_gid dataspace 2>/dev/null || true
 
-# Create a new user called dataspace_app with specified UID and GID
-useradd -m -s /bin/bash -u $uid_gid -g $uid_gid dataspace_app 2>/dev/null || true
+# Create a new user called dataspace with specified UID and GID
+useradd -m -s /bin/bash -u $uid_gid -g $uid_gid dataspace 2>/dev/null || true
 
 
 
@@ -78,21 +78,29 @@ else
     systemctl enable docker
 fi
 
-# Add dataspace_app to docker group
-usermod -aG docker dataspace_app
+# Add dataspace to docker group
+usermod -aG docker dataspace
 
-echo "Setting up DataSpace directory and downloading files..."
+echo "Setting up DataSpace directory"
 
-# Execute the rest as dataspace_app user
-sudo -u dataspace_app bash <<EOSU
+
+
+# Create DataSpace opt directory
+cd /opt/
+mkdir -p ./dataspace
+
+# Change ownership of opt/dataspace to dataspace user
+chown -R dataspace:dataspace /opt/dataspace
+
+
+# --------------- Execute the rest as dataspace user ---------------
+sudo -u dataspace bash <<EOSU
 set -e
 
-# Go to home directory
-cd ~
 
-# Create DataSpace directory
-mkdir -p ./DataSpace
-cd ./DataSpace
+cd /opt/dataspace
+mkdir -p ./Platform
+cd ./Platform
 
 # Create folders first
 mkdir -p ./volume/
@@ -109,8 +117,8 @@ wget -q -O startup.sh https://raw.githubusercontent.com/dataspaceswiss/Installer
 wget -q -O update.sh https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/update.sh
 wget -q -O docker-compose.yml https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/docker-compose.yml
 wget -q -O .env https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/.env
-wget -q -O Caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/Caddyfile
-wget -q -O blocked_ips.caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/blocked_ips.caddyfile
+wget -q -O ./caddy/Caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/Caddyfile
+wget -q -O ./caddy/blocked_ips.caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/blocked_ips.caddyfile
 wget -q -O dataspace-startup.service https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/dataspace-startup.service
 
 # Make scripts executable
@@ -118,19 +126,17 @@ chmod +x ./startup.sh
 chmod +x ./update.sh
 
 # Update Caddyfile content with domain name and admin email
-# Note: Adjust the sed patterns to match your actual placeholders in the files
-sed -i "s/{domain_name}/$domain_name/g" ./caddy/Caddyfile 2>/dev/null || true
-sed -i "s/{admin_email}/admin@$domain_name/g" ./caddy/Caddyfile 2>/dev/null || true
+sed -i "s/{domain_name}/$domain_name/g" ./caddy/Caddyfile 2>/dev/null
+sed -i "s/{admin_email}/admin@$domain_name/g" ./caddy/Caddyfile 2>/dev/null
 
 # Update .env file content with domain name and admin email
-sed -i "s/{domain_name}/$domain_name/g" ./.env 2>/dev/null || true
-sed -i "s/{admin_email}/admin@$domain_name/g" ./.env 2>/dev/null || true
-
-sed -i "s/{license_key}/$license_key/g" ./.env 2>/dev/null || true
+sed -i "s/{domain_name}/$domain_name/g" ./.env 2>/dev/null
+sed -i "s/{admin_email}/admin@$domain_name/g" ./.env 2>/dev/null
+sed -i "s/{license_key}/$license_key/g" ./.env 2>/dev/null
 
 # Update .env file content with USER_ID and GROUP_ID
-sed -i "s/{user_id}/$uid_gid/g" ./.env 2>/dev/null || true
-sed -i "s/{group_id}/$uid_gid/g" ./.env 2>/dev/null || true
+sed -i "s/{user_id}/$uid_gid/g" ./.env 2>/dev/null
+sed -i "s/{group_id}/$uid_gid/g" ./.env 2>/dev/null
 
 # Save the Github key to a file
 echo "$github_key" > ./secrets/gh_key.txt
@@ -142,7 +148,7 @@ EOSU
 
 # Setup systemd service for startup script
 echo "Setting up systemd service..."
-sudo cp /home/dataspace_app/DataSpace/dataspace-startup.service /etc/systemd/system/
+sudo cp /opt/dataspace/Platform/dataspace-startup.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable dataspace-startup.service
 
@@ -150,9 +156,9 @@ echo
 echo "=== Installation Complete ==="
 echo
 echo "Next steps:"
-echo "1. Review and fill in the .env file at /home/dataspace_app/DataSpace/.env"
-echo "2. Switch to dataspace_app user: su - dataspace_app"
-echo "3. Navigate to DataSpace: cd ~/DataSpace"
+echo "1. Review and fill in the .env file at /opt/dataspace/Platform/.env"
+echo "2. Switch to dataspace user: su - dataspace"
+echo "3. Navigate to the platform directory: cd /opt/dataspace/Platform"
 echo "4. Run the update script: ./update.sh"
 echo
 echo "Note: You may need to log out and back in for Docker permissions to take effect."
