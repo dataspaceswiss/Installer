@@ -48,13 +48,6 @@ if ! [[ "$uid_gid" =~ ^[0-9]+$ ]]; then
     exit 1
 fi
 
-# Prompt for public SSH key
-read -p "Enter your SSH public key for dataspace_app user: " ssh_key
-if [ -z "$ssh_key" ]; then
-    echo "Error: SSH key cannot be empty"
-    exit 1
-fi
-
 echo
 echo "Creating user..."
 
@@ -63,13 +56,6 @@ groupadd -g $uid_gid dataspace_app 2>/dev/null || true
 
 # Create a new user called dataspace_app with specified UID and GID
 useradd -m -s /bin/bash -u $uid_gid -g $uid_gid dataspace_app 2>/dev/null || true
-
-# Add the key
-mkdir -p /home/dataspace_app/.ssh
-echo "$ssh_key" > /home/dataspace_app/.ssh/authorized_keys
-chown -R dataspace_app:dataspace_app /home/dataspace_app/.ssh
-chmod 700 /home/dataspace_app/.ssh
-chmod 600 /home/dataspace_app/.ssh/authorized_keys
 
 
 
