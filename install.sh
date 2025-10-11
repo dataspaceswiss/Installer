@@ -15,6 +15,8 @@ echo " |____/ \\__,_|\\__\\__,_|____/| .__/ \\__,_|\\___\\___| |___|_| |_|___/\\
 echo "                            |_|                                                          ";
 echo
 
+# ========================= INPUTS =========================
+
 # Prompt for domain name
 read -p "Enter the domain name: " domain_name
 if [ -z "$domain_name" ]; then
@@ -48,6 +50,8 @@ if ! [[ "$uid_gid" =~ ^[0-9]+$ ]]; then
     exit 1
 fi
 
+
+# ========================= USER CREATION =========================
 echo
 echo "Creating user..."
 
@@ -69,6 +73,8 @@ else
     rm /tmp/get-docker.sh
 fi
 
+# ========================= DOCKER INSTALLATION =========================
+
 # Test if docker is running
 if docker ps &> /dev/null; then
     echo "Docker is running."
@@ -81,9 +87,9 @@ fi
 # Add dataspace to docker group
 usermod -aG docker dataspace
 
+
+
 echo "Setting up DataSpace directory"
-
-
 
 # Create DataSpace opt directory
 cd /opt/
@@ -93,7 +99,8 @@ mkdir -p ./dataspace
 chown -R dataspace:dataspace /opt/dataspace
 
 
-# --------------- Execute the rest as dataspace user ---------------
+
+# ------------------------ Execute the rest as dataspace user ------------------------
 sudo -u dataspace bash <<EOSU
 set -e
 
@@ -148,7 +155,7 @@ EOSU
 
 # Setup systemd service for startup script
 echo "Setting up systemd service..."
-sudo cp /opt/dataspace/Platform/dataspace-startup.service /etc/systemd/system/
+sudo mv /opt/dataspace/Platform/dataspace-startup.service /etc/systemd/system/dataspace-startup.service
 sudo systemctl daemon-reload
 sudo systemctl enable dataspace-startup.service
 
