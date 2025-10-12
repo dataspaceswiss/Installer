@@ -41,7 +41,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=DataSpaceDb
+      - POSTGRES_DB=DataSpace
     expose:
       - '5432'
     restart: always
@@ -60,7 +60,7 @@ services:
       - database
     environment:
       - POSTGRES_HOST=${DB_SERVER}
-      - POSTGRES_DB=DataSpaceDb
+      - POSTGRES_DB=DataSpace
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - SCHEDULE=@daily
@@ -169,3 +169,4 @@ services:
       - caddy_data:/data
     networks:
       - external_net
+
