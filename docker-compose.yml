@@ -4,7 +4,9 @@ networks:
     internal: true
   external_net:
     driver: bridge
-
+  proxy_net:
+    driver: bridge
+    internal: true
 
 volumes:
   data:
@@ -49,6 +51,12 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - internal_net
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 20M
+
 
   pgbackups:
     image: prodrigestivill/postgres-backup-local
@@ -72,20 +80,26 @@ services:
       - internal_net
 
   docker-socket-proxy:
-    image: tecnativa/docker-socket-proxy
+    image: wollomatic/socket-proxy:1
     container_name: DataSpace_docker_socket_proxy
     restart: always
+    user: "0:0"  
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
     environment:
-      - POST=1
-      - CONTAINERS=1
-      - IMAGES=1
-      - BUILD=1
-      - ALLOW_START=1
-      - ALLOW_STOP=1
+      - SP_ALLOWFROM=0.0.0.0/0
+      - SP_LISTENIP=0.0.0.0
+      - SP_PROXYPORT=2375
+      - SP_LOGLEVEL=info
+      - SP_ALLOW_GET=(/images/json)
+      - SP_ALLOW_POST=(/containers/create|/containers/.*/start|/containers/.*/wait|/containers/.*/stop|/build)
+      - SP_ALLOWHEALTHCHECK=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - internal_net
+      - proxy_net
 
   api:
     image: ghcr.io/dataspaceswiss/api:${API_VERSION:-latest}
@@ -127,7 +141,13 @@ services:
     networks:
       - external_net
       - internal_net
+      - proxy_net
     user: "${USER_ID}:${GROUP_ID}"
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 20M
 
   ollama:
     image: ghcr.io/dataspaceswiss/ollama:${OLLAMA_VERSION:-latest}
@@ -138,6 +158,8 @@ services:
       - ollama_data:/root/.ollama
     networks:
       - internal_net
+      - external_net # Ollama needs external network to download models
+
 
   frontend:
     image: ghcr.io/dataspaceswiss/frontend:${FRONTEND_VERSION:-latest}
@@ -154,6 +176,11 @@ services:
     restart: always
     networks:
       - external_net
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.125'
+          memory: 5M
 
   caddy:
     image: caddy:latest
@@ -169,4 +196,8 @@ services:
       - caddy_data:/data
     networks:
       - external_net
-
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 20M

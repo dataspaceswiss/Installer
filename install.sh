@@ -131,6 +131,7 @@ wget -q -O dataspace-startup.service https://raw.githubusercontent.com/dataspace
 # Make scripts executable
 chmod +x ./startup.sh
 chmod +x ./update.sh
+chmod +x ./dataspace-startup.service
 
 # Update Caddyfile content with domain name and admin email
 sed -i "s/{domain_name}/$domain_name/g" ./caddy/Caddyfile 2>/dev/null
