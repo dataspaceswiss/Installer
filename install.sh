@@ -126,12 +126,10 @@ wget -q -O docker-compose.yml https://raw.githubusercontent.com/dataspaceswiss/I
 wget -q -O .env https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/.env
 wget -q -O ./caddy/Caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/Caddyfile
 wget -q -O ./caddy/blocked_ips.caddyfile https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/blocked_ips.caddyfile
-wget -q -O dataspace-startup.service https://raw.githubusercontent.com/dataspaceswiss/Installer/refs/heads/main/dataspace-startup.service
 
 # Make scripts executable
 chmod +x ./startup.sh
 chmod +x ./update.sh
-chmod +x ./dataspace-startup.service
 
 # Update Caddyfile content with domain name and admin email
 sed -i "s/{domain_name}/$domain_name/g" ./caddy/Caddyfile 2>/dev/null
@@ -153,12 +151,6 @@ chmod 600 ./secrets/gh_key.txt
 echo "Files downloaded and configured successfully."
 
 EOSU
-
-# Setup systemd service for startup script
-echo "Setting up systemd service..."
-sudo mv /opt/dataspace/Platform/dataspace-startup.service /etc/systemd/system/dataspace-startup.service
-sudo systemctl daemon-reload
-sudo systemctl enable dataspace-startup.service
 
 echo
 echo "=== Installation Complete ==="
