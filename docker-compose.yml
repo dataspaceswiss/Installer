@@ -3,7 +3,7 @@ networks:
     driver: bridge
     internal: true
   external_net:
-    driver: bridge
+    external: true
   proxy_net:
     driver: bridge
     internal: true
@@ -51,11 +51,12 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - internal_net
+    shm_size: 1g
     deploy:
       resources:
         reservations:
           cpus: '0.25'
-          memory: 20M
+          memory: 128M
 
 
   pgbackups:
@@ -131,6 +132,7 @@ services:
       - AppSettings__LICENSE_KEY=${LICENSE_KEY}
       - AppSettings__USER_ID=${USER_ID}
       - AppSettings__GROUP_ID=${GROUP_ID}
+      - AppSettings__MAX_BUILD_RETENTION_COUNT=5
       - ASPNETCORE_URLS=http://+:5010
       - HEALTHCHECK_PORT=5010
     expose:
@@ -147,7 +149,7 @@ services:
       resources:
         reservations:
           cpus: '0.25'
-          memory: 20M
+          memory: 64M
 
   ollama:
     image: ghcr.io/dataspaceswiss/ollama:${OLLAMA_VERSION:-latest}
@@ -180,7 +182,7 @@ services:
       resources:
         reservations:
           cpus: '0.125'
-          memory: 5M
+          memory: 10M
 
   caddy:
     image: caddy:latest
