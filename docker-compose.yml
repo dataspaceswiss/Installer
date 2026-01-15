@@ -8,6 +8,10 @@ networks:
     driver: bridge
     internal: true
 
+secrets:
+  ollama_api_key:
+    file: ./secrets/ollama_api_key
+
 volumes:
   data:
     name: DataSpace_data
@@ -115,6 +119,9 @@ services:
       - AppSettings__SMTP_SERVER=${SMTP_SERVER}
       - AppSettings__SMTP_SERVER_PASSWORD=${SMTP_SERVER_PASSWORD}
       - AppSettings__OLLAMA_ENDPOINT=${OLLAMA_ENDPOINT}
+      - AppSettings__DATAASSISTANT_DEFAULT_MODEL=${DATAASSISTANT_DEFAULT_MODEL}
+      - AppSettings__DATAASSISTANT_MAX_ITERATIONS=${DATAASSISTANT_MAX_ITERATIONS}
+      - AppSettings__CODINGASSISTANT_DEFAULT_MODEL=${CODINGASSISTANT_DEFAULT_MODEL}
       - AppSettings__GEMINI_ENDPOINT=${GEMINI_ENDPOINT}
       - AppSettings__GEMINI_API_KEY=${GEMINI_API_KEY}
       - AppSettings__DOCKER_HOST=http://docker-socket-proxy:2375
@@ -132,7 +139,6 @@ services:
       - AppSettings__LICENSE_KEY=${LICENSE_KEY}
       - AppSettings__USER_ID=${USER_ID}
       - AppSettings__GROUP_ID=${GROUP_ID}
-      - AppSettings__MAX_BUILD_RETENTION_COUNT=5
       - ASPNETCORE_URLS=http://+:5010
       - HEALTHCHECK_PORT=5010
     expose:
@@ -145,6 +151,8 @@ services:
       - internal_net
       - proxy_net
     user: "${USER_ID}:${GROUP_ID}"
+    secrets:
+      - ollama_api_key
     deploy:
       resources:
         reservations:
