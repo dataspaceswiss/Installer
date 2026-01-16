@@ -178,7 +178,6 @@ services:
       - api
     environment:
       - API_URL=${API_URL}
-      - DOCS_URL=${DOCS_URL}
       - INSTANCE_NAME=${INSTANCE_NAME}
       - INSTANCE_COLOR=${INSTANCE_COLOR}
     expose:
@@ -211,3 +210,4 @@ services:
         reservations:
           cpus: '0.25'
           memory: 20M
+
