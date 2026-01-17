@@ -15,36 +15,21 @@ else
     exit 1
 fi
 
-# --- Log previous API and Frontend images ---
-if docker compose ps -q DataSpace_api >/dev/null 2>&1; then
-    OLD_API_IMAGE=$(docker inspect --format='{{.Config.Image}}' $(docker compose ps -q DataSpace_api))
-else
-    OLD_API_IMAGE="none"
-fi
-
-if docker compose ps -q DataSpace_frontend >/dev/null 2>&1; then
-    OLD_FRONTEND_IMAGE=$(docker inspect --format='{{.Config.Image}}' $(docker compose ps -q DataSpace_frontend))
-else
-    OLD_FRONTEND_IMAGE="none"
-fi
-
 # Login and pull latest docker images
 echo "[1/7] Pulling latest images..."
 docker login --username Haeri --password-stdin ghcr.io <<< "$gh_key"
 docker compose pull
 
-# --- Log new API and Frontend images ---
-NEW_API_IMAGE=$(docker compose images DataSpace_api --quiet)
-NEW_FRONTEND_IMAGE=$(docker compose images DataSpace_frontend --quiet)
-
 # Backup volume
-printf "\n[2/7] Backing up volume...\n"
+echo
+echo "[2/7] Backing up volume..."
 rsync -a --delete --info=progress2 -h \
   volume/DataSpace_data/ \
   volume_backup/DataSpace_data/
 
 # Start database
-printf "\n[3/7] Starting Database...\n"
+echo
+echo "[3/7] Starting Database..."
 docker compose --file docker-compose.yml --env-file .env up database -d
 
 # Wait till database is ready
@@ -53,19 +38,23 @@ until docker exec DataSpace_database pg_isready -U postgres; do
 done
 
 # Create database backup
-printf "\n[4/7] Backing up database...\n"
-docker compose run --rm DataSpace_pgbackups ./backup.sh
+echo
+echo "[4/7] Backing up database..."
+docker compose run --rm pgbackups ./backup.sh
 
 # Install database migrations
-printf "\n[5/7] Installing database migrations...\n"
-docker compose run --rm DataSpace_api ./DataSpaceMigration
+echo
+echo "[5/7] Installing database migrations..."
+docker compose run --rm --entrypoint ./DataSpaceMigration api
 
 # Start all docker services
-printf "\n[6/7] Starting all Docker services...\n"
+echo
+echo "[6/7] Starting all Docker services..."
 ./startup.sh
 
 # Clean up unused Docker resources
-printf "\n[7/7] Cleaning up unused Docker resources...\n"
+echo
+echo "[7/7] Cleaning up unused Docker resources..."
 docker image prune -a -f
 docker builder prune -f
 docker container prune -f
@@ -73,5 +62,3 @@ docker container prune -f
 # Final success message
 echo
 echo "✅ Upgrade complete!"
-echo "API:      $OLD_API_IMAGE → $NEW_API_IMAGE"
-echo "Frontend: $OLD_FRONTEND_IMAGE → $NEW_FRONTEND_IMAGE"
