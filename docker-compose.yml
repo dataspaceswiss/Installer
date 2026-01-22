@@ -21,8 +21,8 @@ secrets:
     file: ./secrets/encryption_key
   smtp_server_password:
     file: ./secrets/smtp_server_password
-  # gemini_api_key:
-  #   file: ./secrets/gemini_api_key
+  gemini_api_key:
+    file: ./secrets/gemini_api_key
   # ollama_api_key:
   #   file: ./secrets/ollama_api_key
   # microsoft_client_secret:
@@ -176,8 +176,8 @@ services:
       - smtp_server_password
       - db_password
       - encryption_key
+      - gemini_api_key
       # - ollama_api_key
-      # - gemini_api_key
       # - microsoft_client_secret
       # - google_client_secret
     deploy:

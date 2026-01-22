@@ -163,6 +163,7 @@ generate_secret "./secrets/platform_admin_password"
 generate_secret "./secrets/db_password"
 generate_secret "./secrets/encryption_key"
 generate_secret "./secrets/smtp_server_password"
+generate_secret "./secrets/gemini_api_key"
 
 
 echo "Files downloaded and configured successfully."
