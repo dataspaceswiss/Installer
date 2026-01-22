@@ -138,15 +138,32 @@ sed -i "s/{admin_email}/admin@$domain_name/g" ./caddy/Caddyfile 2>/dev/null
 # Update .env file content with domain name and admin email
 sed -i "s/{domain_name}/$domain_name/g" ./.env 2>/dev/null
 sed -i "s/{admin_email}/admin@$domain_name/g" ./.env 2>/dev/null
-sed -i "s/{license_key}/$license_key/g" ./.env 2>/dev/null
 
 # Update .env file content with USER_ID and GROUP_ID
 sed -i "s/{user_id}/$uid_gid/g" ./.env 2>/dev/null
 sed -i "s/{group_id}/$uid_gid/g" ./.env 2>/dev/null
 
-# Save the Github key to a file
+# Save secrets
 echo "$github_key" > ./secrets/gh_key.txt
 chmod 600 ./secrets/gh_key.txt
+echo "$license_key" > ./secrets/license_key
+chmod 600 ./secrets/license_key
+
+# Generate additional secrets if they don't exist
+generate_secret() {
+    local file=$1
+    if [ ! -f "$file" ]; then
+        echo "Generating $(basename "$file")..."
+        LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32 > "$file"
+        chmod 600 "$file"
+    fi
+}
+
+generate_secret "./secrets/platform_admin_password"
+generate_secret "./secrets/db_password"
+generate_secret "./secrets/encryption_key"
+generate_secret "./secrets/smtp_server_password"
+
 
 echo "Files downloaded and configured successfully."
 
@@ -156,10 +173,11 @@ echo
 echo "=== Installation Complete ==="
 echo
 echo "Next steps:"
-echo "1. Review and fill in the .env file at /opt/dataspace/Platform/.env"
-echo "2. Switch to dataspace user: su - dataspace"
-echo "3. Navigate to the platform directory: cd /opt/dataspace/Platform"
-echo "4. Run the update script: ./update.sh"
+echo "1. Switch to dataspace user: sudo su - dataspace"
+echo "2. Navigate to the platform directory: cd /opt/dataspace/Platform"
+echo "3. Review and fill in the .env file as needed"
+echo "4. Create the necessary secrets in the ./secrets/ directory"
+echo "5. Run the update script: ./update.sh"
 echo
 echo "Note: You may need to log out and back in for Docker permissions to take effect."
 echo "Or run: newgrp docker"

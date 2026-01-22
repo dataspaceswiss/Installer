@@ -3,14 +3,32 @@ networks:
     driver: bridge
     internal: true
   external_net:
-    external: true
+    driver: bridge
+    # Enable if a an external reverse proxy is used
+    # external: true  
   proxy_net:
     driver: bridge
     internal: true
 
 secrets:
-  ollama_api_key:
-    file: ./secrets/ollama_api_key
+  license_key:
+    file: ./secrets/license_key
+  platform_admin_password:
+    file: ./secrets/platform_admin_password
+  db_password:
+    file: ./secrets/db_password
+  encryption_key:
+    file: ./secrets/encryption_key
+  smtp_server_password:
+    file: ./secrets/smtp_server_password
+  # gemini_api_key:
+  #   file: ./secrets/gemini_api_key
+  # ollama_api_key:
+  #   file: ./secrets/ollama_api_key
+  # microsoft_client_secret:
+  #   file: ./secrets/microsoft_client_secret
+  # google_client_secret:
+  #   file: ./secrets/google_client_secret
 
 volumes:
   data:
@@ -45,9 +63,9 @@ services:
     image: postgres:15
     container_name: DataSpace_database
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=DataSpace
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
     expose:
       - '5432'
     restart: always
@@ -56,11 +74,14 @@ services:
     networks:
       - internal_net
     shm_size: 1g
-    deploy:
-      resources:
-        reservations:
-          cpus: '0.25'
-          memory: 128M
+    secrets:
+      - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
 
 
   pgbackups:
@@ -70,12 +91,13 @@ services:
     volumes:
       - db_backup:/backups
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     environment:
       - POSTGRES_HOST=${DB_SERVER}
       - POSTGRES_DB=DataSpace
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
       - SCHEDULE=@daily
       - BACKUP_KEEP_DAYS=7
       - BACKUP_KEEP_WEEKS=4
@@ -83,6 +105,10 @@ services:
       - HEALTHCHECK_PORT=8080
     networks:
       - internal_net
+    secrets:
+      - db_password
+    
+
 
   docker-socket-proxy:
     image: wollomatic/socket-proxy:1
@@ -110,33 +136,26 @@ services:
     image: ghcr.io/dataspaceswiss/api:${API_VERSION:-latest}
     container_name: DataSpace_api
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     environment:
       - AppSettings__INSTANCE_NAME=${INSTANCE_NAME}
       - AppSettings__INSTANCE_COLOR=${INSTANCE_COLOR}
       - AppSettings__CORS_ORIGINS=${CORS_ORIGINS}
       - AppSettings__API_URL=${API_URL}
       - AppSettings__SMTP_SERVER=${SMTP_SERVER}
-      - AppSettings__SMTP_SERVER_PASSWORD=${SMTP_SERVER_PASSWORD}
       - AppSettings__OLLAMA_ENDPOINT=${OLLAMA_ENDPOINT}
       - AppSettings__DATAASSISTANT_DEFAULT_MODEL=${DATAASSISTANT_DEFAULT_MODEL}
       - AppSettings__DATAASSISTANT_MAX_ITERATIONS=${DATAASSISTANT_MAX_ITERATIONS}
       - AppSettings__CODINGASSISTANT_DEFAULT_MODEL=${CODINGASSISTANT_DEFAULT_MODEL}
       - AppSettings__GEMINI_ENDPOINT=${GEMINI_ENDPOINT}
-      - AppSettings__GEMINI_API_KEY=${GEMINI_API_KEY}
       - AppSettings__DOCKER_HOST=http://docker-socket-proxy:2375
       - AppSettings__DATA_STORAGE_PATH=${DATA_STORAGE_PATH}
       - AppSettings__HOST_DATA_STORAGE_PATH=${HOST_DATA_STORAGE_PATH}
-      - AppSettings__ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - AppSettings__PLATFORM_ADMIN_EMAIL=${PLATFORM_ADMIN_EMAIL}
-      - AppSettings__PLATFORM_ADMIN_PASSWORD=${PLATFORM_ADMIN_PASSWORD}
       - AppSettings__DB_SERVER=${DB_SERVER}
-      - AppSettings__DB_PASSWORD=${DB_PASSWORD}
       - AppSettings__MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
-      - AppSettings__MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET}
       - AppSettings__GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - AppSettings__GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - AppSettings__LICENSE_KEY=${LICENSE_KEY}
       - AppSettings__USER_ID=${USER_ID}
       - AppSettings__GROUP_ID=${GROUP_ID}
       - ASPNETCORE_URLS=http://+:5010
@@ -152,7 +171,15 @@ services:
       - proxy_net
     user: "${USER_ID}:${GROUP_ID}"
     secrets:
-      - ollama_api_key
+      - license_key
+      - platform_admin_password
+      - smtp_server_password
+      - db_password
+      - encryption_key
+      # - ollama_api_key
+      # - gemini_api_key
+      # - microsoft_client_secret
+      # - google_client_secret
     deploy:
       resources:
         reservations:
@@ -210,4 +237,3 @@ services:
         reservations:
           cpus: '0.25'
           memory: 20M
-
