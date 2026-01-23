@@ -1,4 +1,5 @@
 @blocked {
-    # remote_ip xxx.xx.xx.xx
+    remote_ip 1.2.3.4 # example (don't remove)
 }
 abort @blocked
+
