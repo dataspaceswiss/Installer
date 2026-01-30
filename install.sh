@@ -147,6 +147,8 @@ fi
 sudo -u dataspace TEST_MODE="$TEST_MODE" bash <<EOSU
 set -e
 
+# Import get_file function from parent shell
+$(declare -f get_file)
 
 cd /opt/dataspace
 mkdir -p ./Platform
@@ -162,19 +164,6 @@ mkdir -p ./caddy/
 mkdir -p ./secrets/
 mkdir -p ./metrics/
 mkdir -p ./metrics/host_metrics/
-
-# Helper to get files
-get_file() {
-    local output=\$1
-    local url=\$2
-    if [ "\$TEST_MODE" = "true" ] && [ -f "/tmp/install/\$(basename "\$output")" ]; then
-        echo "   Using local /tmp/install/\$(basename "\$output")"
-        cp "/tmp/install/\$(basename "\$output")" "\$output"
-    else
-        echo "   Downloading \$output..."
-        wget -q -O "\$output" "\$url"
-    fi
-}
 
 # Download resource files
 echo "Fetching configuration files..."
