@@ -1,0 +1,14 @@
+[Unit]
+Description=Metrics Collector
+After=network.target
+
+[Service]
+Type=simple
+User=dataspace
+WorkingDirectory=/opt/dataspace/Platform/metrics
+ExecStart=/opt/dataspace/Platform/metrics/venv/bin/python /opt/dataspace/Platform/metrics/metrics_collector.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -21,8 +21,8 @@ secrets:
     file: ./secrets/encryption_key
   smtp_server_password:
     file: ./secrets/smtp_server_password
-  gemini_api_key:
-    file: ./secrets/gemini_api_key
+  # gemini_api_key:
+  #   file: ./secrets/gemini_api_key
   # ollama_api_key:
   #   file: ./secrets/ollama_api_key
   # microsoft_client_secret:
@@ -56,6 +56,13 @@ volumes:
     name: DataSpace_ollama_data
   caddy_data:
     name: DataSpace_caddy_data
+  host_metrics:
+    name: DataSpace_host_metrics
+    driver: local
+    driver_opts:
+      type: none
+      device: ./metrics/host_metrics
+      o: bind
 
 services:
 
@@ -144,6 +151,8 @@ services:
       - AppSettings__CORS_ORIGINS=${CORS_ORIGINS}
       - AppSettings__API_URL=${API_URL}
       - AppSettings__SMTP_SERVER=${SMTP_SERVER}
+      - AppSettings__SMTP_USER=${SMTP_USER}
+      - AppSettings__SMTP_DOMAIN=${SMTP_DOMAIN}
       - AppSettings__OLLAMA_ENDPOINT=${OLLAMA_ENDPOINT}
       - AppSettings__DATAASSISTANT_DEFAULT_MODEL=${DATAASSISTANT_DEFAULT_MODEL}
       - AppSettings__DATAASSISTANT_MAX_ITERATIONS=${DATAASSISTANT_MAX_ITERATIONS}
@@ -152,12 +161,17 @@ services:
       - AppSettings__DOCKER_HOST=http://docker-socket-proxy:2375
       - AppSettings__DATA_STORAGE_PATH=${DATA_STORAGE_PATH}
       - AppSettings__HOST_DATA_STORAGE_PATH=${HOST_DATA_STORAGE_PATH}
+      - AppSettings__HOST_METRICS_PATH=${HOST_METRICS_PATH}
       - AppSettings__PLATFORM_ADMIN_EMAIL=${PLATFORM_ADMIN_EMAIL}
       - AppSettings__DB_SERVER=${DB_SERVER}
       - AppSettings__MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
       - AppSettings__GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - AppSettings__USER_ID=${USER_ID}
       - AppSettings__GROUP_ID=${GROUP_ID}
+      # - AppSettings__MAX_BUILD_RETENTION_COUNT=10
+      # - AppSettings__MAX_SCHEDULE_FAIL_COUNT=3
+      # - AppSettings__MAX_BUILD_RUNNER_COUNT=4
+      # - AppSettings__MAX_TIMEOUT_HOURS=8
       - ASPNETCORE_URLS=http://+:5010
       - HEALTHCHECK_PORT=5010
     expose:
@@ -165,6 +179,7 @@ services:
     restart: always
     volumes:
       - data:/app/data
+      - host_metrics:/metrics/host_metrics:ro
     networks:
       - external_net
       - internal_net
@@ -176,7 +191,7 @@ services:
       - smtp_server_password
       - db_password
       - encryption_key
-      - gemini_api_key
+      # - gemini_api_key
       # - ollama_api_key
       # - microsoft_client_secret
       # - google_client_secret

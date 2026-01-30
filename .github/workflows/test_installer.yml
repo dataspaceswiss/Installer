@@ -1,0 +1,16 @@
+name: Test Installer
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Git Clone
+        uses: actions/checkout@v4
+      - name: Test
+        run: ./test_install.sh

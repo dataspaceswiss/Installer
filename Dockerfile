@@ -15,11 +15,12 @@ RUN apt-get update && apt-get install -y \
     lsb-release \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only the installer script
-COPY install.sh /tmp/install.sh
-
-# Make script executable
-RUN chmod +x /tmp/install.sh
+# Copy the whole directory
+COPY ./templates/ /tmp/install/
+COPY ./install.sh /tmp/install/install.sh
+COPY ./test_install.sh /tmp/install/test_install.sh
+RUN chmod +x /tmp/install/install.sh
+RUN chmod +x /tmp/install/test_install.sh
 
 # Set the installer as the default command
-CMD ["/tmp/install.sh"]
+CMD ["/tmp/install/install.sh"]
